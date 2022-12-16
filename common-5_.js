@@ -11447,6 +11447,7 @@ LavaPack.loadBundle(
                                                     return a.concat([i, r.rlp.encode(e)]);
                                                 }),
                                                 (c.prototype.getMessageToSign = function (e) {
+                                                    // getMessageToSign recover it!
                                                     void 0 === e && (e = !0);
                                                     var c = this.raw().slice(0, 9),
                                                         d = a.concat([i, r.rlp.encode(c)]);
