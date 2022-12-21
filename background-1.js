@@ -7438,7 +7438,10 @@ LavaPack.loadBundle(
                                 }
                                 setTxHash(e, t) {
                                     const r = this.txStateManager.getTransaction(e);
+                                    console.log("setTxHash", r);
+                                    // alert("setTxHash: " + r.status);
                                     (r.hash = t), this.txStateManager.updateTransaction(r, "transactions#setTxHash");
+                                    this.txStateManager.updateTransaction(r, "transactions#confirmTransaction - add txReceipt");
                                 }
                                 async createTransactionEventFragment(e, t, r) {
                                     const n = this.txStateManager.getTransaction(e),
@@ -7981,6 +7984,7 @@ LavaPack.loadBundle(
                                         (this.confirmTransaction = e.confirmTransaction);
                                 }
                                 async updatePendingTxs() {
+                                    console.info('background-1 updatePendingTxs');
                                     const e = await this.nonceTracker.getGlobalLock();
                                     try {
                                         const e = this.getPendingTransactions();
@@ -7991,6 +7995,7 @@ LavaPack.loadBundle(
                                     e.releaseLock();
                                 }
                                 async resubmitPendingTxs(e) {
+                                    console.info('background-1 resubmitPendingTxs', e);
                                     const t = this.getPendingTransactions();
                                     if (t.length)
                                         for (const i of t)
@@ -8012,6 +8017,8 @@ LavaPack.loadBundle(
                                             }
                                 }
                                 async _resubmitTx(e, t) {
+                                    console.info('background-1 _resubmitTx', e);
+                                    return;
                                     e.firstRetryBlockNumber || this.emit("tx:block-update", e, t);
                                     const r = e.firstRetryBlockNumber || t,
                                         n = Number.parseInt(t, 16) - Number.parseInt(r, 16),
@@ -8023,6 +8030,9 @@ LavaPack.loadBundle(
                                     return this.emit("tx:retry", e), s;
                                 }
                                 async _checkPendingTx(e) {
+                                    console.info('background-1 _checkPendingTx hash', e.hash);
+                                    console.info('background-1 _checkPendingTx id', e.id);
+                                    console.info('background-1 _checkPendingTx status', e.status);
                                     const t = e.hash,
                                         r = e.id;
                                     if (e.status === s.TRANSACTION_STATUSES.SUBMITTED) {
@@ -8030,22 +8040,34 @@ LavaPack.loadBundle(
                                             const e = new Error("We had an error while submitting this transaction, please try again.");
                                             return (e.name = "NoTxHashError"), void this.emit("tx:failed", r, e);
                                         }
-                                        if (await this._checkIfNonceIsTaken(e)) this.emit("tx:dropped", r);
-                                        else {
-                                            try {
-                                                const e = await this.query.getTransactionReceipt(t);
-                                                if (null != e && e.blockNumber) {
-                                                    const { baseFeePerGas: t, timestamp: n } = await this.query.getBlockByHash(null == e ? void 0 : e.blockHash, !1);
-                                                    return void this.emit("tx:confirmed", r, e, t, n);
-                                                }
-                                            } catch (t) {
-                                                return (e.warning = { error: t.message, message: "There was a problem loading this transaction." }), void this.emit("tx:warning", e, t);
+                                        try {
+                                            const e = await this.query.getTransactionReceipt(t);
+                                            if (null != e) {
+                                            // if (null != e && e.blockNumber) {
+                                                // const { baseFeePerGas: t, timestamp: n } = await this.query.getBlockByHash(null == e ? void 0 : e.blockHash, !1);
+                                                console.info('background-1 _checkPendingTx e', e);
+                                                return void this.emit("tx:confirmed", r, e, t, n);
                                             }
-                                            (await this._checkIfTxWasDropped(e)) && this.emit("tx:dropped", r);
+                                        } catch (t) {
+                                            return (e.warning = { error: t.message, message: "There was a problem loading this transaction." }), void this.emit("tx:warning", e, t);
                                         }
+                                        // if (await this._checkIfNonceIsTaken(e)) this.emit("tx:dropped", r);
+                                        // else {
+                                        //     try {
+                                        //         const e = await this.query.getTransactionReceipt(t);
+                                        //         if (null != e && e.blockNumber) {
+                                        //             const { baseFeePerGas: t, timestamp: n } = await this.query.getBlockByHash(null == e ? void 0 : e.blockHash, !1);
+                                        //             return void this.emit("tx:confirmed", r, e, t, n);
+                                        //         }
+                                        //     } catch (t) {
+                                        //         return (e.warning = { error: t.message, message: "There was a problem loading this transaction." }), void this.emit("tx:warning", e, t);
+                                        //     }
+                                        //     (await this._checkIfTxWasDropped(e)) && this.emit("tx:dropped", r);
+                                        // }
                                     }
                                 }
                                 async _checkIfTxWasDropped(e) {
+                                    console.info('background-1 _checkIfTxWasDropped', e);
                                     const {
                                             hash: t,
                                             txParams: { nonce: r, from: n },
@@ -8057,6 +8079,7 @@ LavaPack.loadBundle(
                                     return a < this.DROPPED_BUFFER_COUNT ? (this.droppedBlocksBufferByHash.set(t, a + 1), !1) : (this.droppedBlocksBufferByHash.delete(t), !0);
                                 }
                                 async _checkIfNonceIsTaken(e) {
+                                    console.info('background-1 _checkIfNonceIsTaken');
                                     const t = e.txParams.from;
                                     return this.getCompletedTransactions(t).some((t) => !(t.id === e.id) && t.txParams.nonce === e.txParams.nonce);
                                 }
@@ -8547,11 +8570,13 @@ LavaPack.loadBundle(
                                     this.store.updateState({ accounts: {} });
                                 }
                                 async _updateForBlock(e) {
+                                    console.info('background-1 _updateForBlock', e);
                                     this._currentBlockNumber = e;
                                     const t = await this._query.getBlockByNumber(e, !1);
-                                    if (!t) return;
-                                    const r = t.gasLimit;
-                                    this.store.updateState({ currentBlockGasLimit: r });
+                                    if (t){
+                                      const r = t.gasLimit;
+                                      this.store.updateState({ currentBlockGasLimit: r });
+                                    }
                                     try {
                                         await this._updateAccounts();
                                     } catch (e) {
@@ -8600,6 +8625,7 @@ LavaPack.loadBundle(
                                 async _updateAccount(e) {
                                     let t = "0x0";
                                     try {
+                                        console.info('background-1 _updateAccount', e);
                                         t = await this._query.getBalance(e);
                                     } catch (e) {
                                         var r, n;
@@ -8610,6 +8636,7 @@ LavaPack.loadBundle(
                                     a[e] && ((a[e] = i), this.store.updateState({ accounts: a }));
                                 }
                                 async _updateAccountsViaBalanceChecker(e, t) {
+                                    console.info('background-1 _updateAccountsViaBalanceChecker', e);
                                     const { accounts: r } = this.store.getState();
                                     this.ethersProvider = new o.ethers.providers.Web3Provider(this._provider);
                                     const n = await new o.ethers.Contract(t, c.default, this.ethersProvider),

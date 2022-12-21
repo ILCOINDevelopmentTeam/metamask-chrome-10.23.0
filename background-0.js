@@ -16242,6 +16242,8 @@ LavaPack.loadBundle(
                                     const e = { jsonrpc: "2.0", id: c(), method: "eth_blockNumber", params: [] };
                                     this._setSkipCacheFlag && (e.skipCache = !0), u("Making request", e);
                                     const t = await (0, o.default)((t) => this._provider.sendAsync(e, t))();
+                                    // update block count JCOL commitment
+                                    
                                     if ((u("Got response", t), t.error)) throw new Error(`PollingBlockTracker - encountered error fetching block:\n${t.error.message}`);
                                     return t.result;
                                 }
