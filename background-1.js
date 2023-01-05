@@ -7441,7 +7441,7 @@ LavaPack.loadBundle(
                                     console.log("setTxHash", r);
                                     // alert("setTxHash: " + r.status);
                                     (r.hash = t), this.txStateManager.updateTransaction(r, "transactions#setTxHash");
-                                    this.txStateManager.updateTransaction(r, "transactions#confirmTransaction - add txReceipt");
+                                    // this.txStateManager.updateTransaction(r, "transactions#confirmTransaction - add txReceipt"); // #1 Update
                                 }
                                 async createTransactionEventFragment(e, t, r) {
                                     const n = this.txStateManager.getTransaction(e),
@@ -8041,8 +8041,10 @@ LavaPack.loadBundle(
                                             return (e.name = "NoTxHashError"), void this.emit("tx:failed", r, e);
                                         }
                                         try {
+                                            // Need to get the data from ilcoin explorer to be sure if the tx is confirmed.
                                             const e = await this.query.getTransactionReceipt(t);
-                                            if (null != e) {
+                                            console.info('background-1 getTransactionReceipt e', e);
+                                            if (null != e && e.blockNumber) {
                                             // if (null != e && e.blockNumber) {
                                                 // const { baseFeePerGas: t, timestamp: n } = await this.query.getBlockByHash(null == e ? void 0 : e.blockHash, !1);
                                                 console.info('background-1 _checkPendingTx e', e);
